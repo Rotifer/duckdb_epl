@@ -17,24 +17,7 @@ Our objective is to create a new file in the format [FILL IN LATER]
 
 ## Importing the data
 
-Let's first take a look at the first 10 rows:
-
-```sql
-SELECT * 
-FROM '../source_data/season_1992_1993.tsv' 
-LIMIT 10;
-```
-This shows us the first 10 rows and confirms that we have the expected 23 columns, as show below:
-
-![ch05 fig1](images/ch05_fig1.png)
-
-We can now import the table and get to work extracting its data into a more usable format. 
-
-```sql
-USE SCHEMA staging;
-CREATE TABLE season_1992_1993_raw AS
-SELECT * 
-FROM '../source_data/season_1992_1993.tsv' ;
+Done! in posting 3
 ```
 
 ## Re-format season 1992-1993 data
