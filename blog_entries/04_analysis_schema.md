@@ -1,19 +1,47 @@
-# Chapter 4 - Creation of the analysis schema
+# Creation of the analysis tables 🦆⚽
 
-## Clubs table
+We now have our data in two tables in the _staging_ scehma but it is not yet analysis ready. Just to recap, our raw data table names are:
 
-Source data prepared in Google Sheets
+1. season_1992_1993_raw
+1. seasons_1993_2023_raw
 
-### Table creation and population
+
+We are also going to create and populate another table in schema _main_ called _clubs_ to map club names to commonly used three letter club codes. The data for this small look-up table was pre-prepared in Google Sheets 
+
+The clean up we will need to do on our two raw to tables to get to analysis-ready data is usually required; we are rarely given analysis-ready data and if we are, it usually means someone somewhere put in considerable effort  to clean the data for us. The task we will see here also showcase DuckDB's excellent data wrangling capabilities; it really is a first class tool for these types of task and I will highlight its impressive strengths in this regard as we transform our raw data into clean, analysis-ready tables.
+
+
+## Table _clubs_
+
+### Table creation
+
+We create the table in schema _main_ using the following SQL
 
 ```sql
-CREATE TABLE clubs(
+USE main; -- Ensure this table is created in schema main
+CREATE OR REPLACE TABLE clubs(
   club_code VARCHAR PRIMARY KEY,
   club_name VARCHAR,
   club_given_name VARCHAR);
 ```
 
-Populating the table
+I have added a primary key, the club code, to ensure that the club code is unique. We are not building a transactional database (OLTP) but rather an analytical one so I will not spend much time discussing database keys or database design but I will add primary and foreign keys if it makes sense to do so.
+
+__Note__: The "OR REPLACE" is a non-standard DuckDB addition to SQL. It is standard SQL for view creation but in SQLite or  we would need a "DROP TABLE IF EXISTS <table_name>;" to get the same effect. DuckDB supports this syntax too so we could use it if compatibility was a concern.
+
+### Commenting a table and its columns
+
+A nice feature of DuckDB is the ability to add comments to objects that are stored in its system catalogs. The syntax is identical PostgreSQL and we will add comments to all our tables, their columns, views as macros as we proceed.
+
+```sql
+COMMENT ON TABLE clubs IS 'A lookup that maps club three-letter codes to names given in source files and the official club name. Records every club that has played in at least one EPL season.';
+COMMENT ON COLUMN clubs.club_code IS 'A recognised uppercase three letter code for clubs to be used in other tables.';
+COMMENT ON COLUMN clubs.club_name IS 'The official name of the club.';
+COMMENT ON COLUMN clubs.club_given_name IS 'The club name used in source files which may or may not be the same as the official club name.';
+```
+### Populating the table
+
+The file which was curated in Google Sheets and then exported as a TSV is uploaded into our new, heavily commented table as follows:
 
 ```sql
 INSERT INTO clubs(club_code,
@@ -26,32 +54,57 @@ SELECT
 FROM '../source_data/clubs.tsv';
 ```
 
-## Macros
+__Note__: The three letter codes i have used here are those used by Wikipedia. I am not sure if they are official but they are suitable identifiers because they are both short and unambiguous while club names are tedious to type and ambiguous; is it "Manchester United", "Man U", or just "United"? The three letter code "MUN" is much easier. When we want to use the full club name, in reports for example, we can join to this table to get it.
 
-```sql
-CREATE SCHEMA macros;
-USE macros;
-CREATE MACRO get_club_code(p_club_name) AS TABLE
-  SELECT club_code 
-  FROM main.clubs 
-  WHERE club_given_name = p_club_name
-  LIMIT 1;
-```
+
 
 ## Create the _matches_ table
 
-We want a table that records details of matches where match_id is unique
+This is our main table and it records details for all EPL matches played from season 1992_1993 to season 2023_2024. We will create the table in schema _main_ and then populate it with the data we validate and format from the raw tables in schema _staging_
 
 ```sql
-CREATE TABLE matches(
-  match_id VARCHAR PRIMARY KEY,
-  season VARCHAR,
-  match_date DATE,
-  match_time TIME
+USE main;
+CREATE SEQUENCE seq_match_id START 1;
+CREATE OR REPLACE TABLE matches(
+  mid INTEGER PRIMARY KEY DEFAULT NEXTVAL('seq_match_id'),
+  season TEXT NOT NULL,
+  mdate DATE,
+  mtime TIME,
+  hcc TEXT NOT NULL,
+  acc TEXT NOT NULL,
+  hcg TINYINT NOT NULL,
+  acg TINYINT NOT NULL
 );
 ```
+### Use of sequences
 
-### Make the data to append using a view
+We have used the _sequence_ object to create a monotonically increasing number which use as a primary key. while not strictly necessary, it is useful to allow us to easily identify individual matches and the ID will be generated automatically when we insert rows later.
+
+### Document our table
+
+We will add comments as we did for table _clubs_.
+
+```sql
+COMMENT ON TABLE matches IS 'A record of clubs, goals scored/conceded with time and date details (if available) for every match from season 1992_1993 to 2023_2024.';
+COMMENT ON COLUMN matches.mid IS 'The match ID: Primary key autogenerated from a sequence.';
+COMMENT ON COLUMN matches.season IS 'The season the match was played in.';
+COMMENT ON COLUMN matches.mdate IS 'The date on which the match was played, if available.';
+COMMENT ON COLUMN matches.mtime IS 'The time the match was played. Data only available for recent seasons.';
+COMMENT ON COLUMN matches.hcc IS 'Home club code: The club playing at its home stadium/';
+COMMENT ON COLUMN matches.acc IS 'Away club code: The club playing away from its home stadium';
+COMMENT ON COLUMN matches.hcg IS 'Home club goals: The number of goals scored by the home club.';
+COMMENT ON COLUMN matches.acg IS 'Away club goals: The number of goals scored by the away club.';
+```
+__Note__: I have deliberately used short column names for the table but I have fully spelled out the columns' purpose in the comments where the abbreviated names are explained; "acc" means "Away Club Code", for example. This approach makes query writing simpler and we can avoid using aliases.
+
+## Insert data into the table _matches_
+
+Our _matches_ is now ready to receive data but before we insert it, we need to check it and clean it up.
+
+### Season 1992-1993
+
+The data for this season is in a crosstab format as dicussed in the [previous post](https://rotifer.github.io/2025/01/04/loading-and-viewing-data-in-duckdb.html).
+
 
 - We need the rows for _matches_ from both the 1992-1993 season and all the other seasons in one table or view that we can append to the _matches_ table created above.
 
