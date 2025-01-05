@@ -2,8 +2,8 @@
 
 We now have our data in two tables in the _staging_ scehma but it is not yet analysis ready. Just to recap, our raw data table names are:
 
-1. season_1992_1993_raw
-1. seasons_1993_2023_raw
+1. _season_1992_1993_raw_
+1. _seasons_1993_2023_raw_
 
 
 First, we are also going to create and populate another table in schema _main_ called _clubs_ to map club names to commonly used three letter club codes. The data for this small look-up table was pre-prepared in Google Sheets 
