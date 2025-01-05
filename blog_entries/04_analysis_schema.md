@@ -6,9 +6,9 @@ We now have our data in two tables in the _staging_ scehma but it is not yet ana
 1. seasons_1993_2023_raw
 
 
-We are also going to create and populate another table in schema _main_ called _clubs_ to map club names to commonly used three letter club codes. The data for this small look-up table was pre-prepared in Google Sheets 
+First, we are also going to create and populate another table in schema _main_ called _clubs_ to map club names to commonly used three letter club codes. The data for this small look-up table was pre-prepared in Google Sheets 
 
-The clean up we will need to do on our two raw to tables to get to analysis-ready data is usually required; we are rarely given analysis-ready data and if we are, it usually means someone somewhere put in considerable effort  to clean the data for us. The task we will see here also showcase DuckDB's excellent data wrangling capabilities; it really is a first class tool for these types of task and I will highlight its impressive strengths in this regard as we transform our raw data into clean, analysis-ready tables.
+The clean up we will need to do on our two raw to tables to get to analysis-ready data is required for most data tasks; we are rarely given analysis-ready data and if we are, it usually means someone, somewhere put in considerable effort to clean the data for us. The tasks we will see here also showcase DuckDB's excellent data wrangling capabilities; it really is a first class tool for these types of task and I will highlight its impressive strengths in this regard as we transform our raw data into clean, analysis-ready tables.
 
 
 ## Table _clubs_
@@ -27,11 +27,11 @@ CREATE OR REPLACE TABLE clubs(
 
 I have added a primary key, the club code, to ensure that the club code is unique. We are not building a transactional database (OLTP) but rather an analytical one so I will not spend much time discussing database keys or database design but I will add primary and foreign keys if it makes sense to do so.
 
-__Note__: The "OR REPLACE" is a non-standard DuckDB addition to SQL. It is standard SQL for view creation but in SQLite or  we would need a "DROP TABLE IF EXISTS <table_name>;" to get the same effect. DuckDB supports this syntax too so we could use it if compatibility was a concern.
+__Note__: The "OR REPLACE" is a non-standard DuckDB addition to SQL. It is standard SQL for view creation but in SQLite or  PostgreSQL we would need a "DROP TABLE IF EXISTS <table_name>;" to get the same effect. DuckDB supports this syntax too so we could use it if compatibility was a concern.
 
 ### Commenting a table and its columns
 
-A nice feature of DuckDB is the ability to add comments to objects that are stored in its system catalogs. The syntax is identical PostgreSQL and we will add comments to all our tables, their columns, views as macros as we proceed.
+A nice feature of DuckDB is the ability to add comments to objects that are stored in its system catalogs. The syntax is identical to PostgreSQL and we will add comments to all our tables, their columns, views or macros as we proceed.
 
 ```sql
 COMMENT ON TABLE clubs IS 'A lookup that maps club three-letter codes to names given in source files and the official club name. Records every club that has played in at least one EPL season.';
@@ -54,7 +54,7 @@ SELECT
 FROM '../source_data/clubs.tsv';
 ```
 
-__Note__: The three letter codes i have used here are those used by Wikipedia. I am not sure if they are official but they are suitable identifiers because they are both short and unambiguous while club names are tedious to type and ambiguous; is it "Manchester United", "Man U", or just "United"? The three letter code "MUN" is much easier. When we want to use the full club name, in reports for example, we can join to this table to get it.
+__Note__: The three letter codes I have used here are those given Wikipedia. I am not sure if they are official but they are suitable identifiers because they are both short and unambiguous while club names are tedious to type and ambiguous; is it "Manchester United", "Man U", or just "United"? The three letter code "MUN" is much easier. When we want to use the full club name, in reports for example, we can join to this table to get it.
 
 
 
@@ -78,7 +78,7 @@ CREATE OR REPLACE TABLE matches(
 ```
 ### Use of sequences
 
-We have used the _sequence_ object to create a monotonically increasing number which use as a primary key. while not strictly necessary, it is useful to allow us to easily identify individual matches and the ID will be generated automatically when we insert rows later.
+We have used the _sequence_ object to create a monotonically increasing number to use as a primary key. while not strictly necessary, it is useful to allow us to easily identify individual matches and the ID will be generated automatically when we insert rows later.
 
 ### Document our table
 
@@ -99,25 +99,25 @@ __Note__: I have deliberately used short column names for the table but I have f
 
 ## Insert data into the table _matches_
 
-Our _matches_ is now ready to receive data but before we insert it, we need to check it and clean it up.
+Our _matches_ table is now ready to receive data but before we insert it, we need to check it and clean it up.
 
 ### Season 1992-1993
 
 The data giving match scores for season 1992-1993 was downloaded from Wikipedia as discussed in the [previous post](https://rotifer.github.io/2025/01/04/loading-and-viewing-data-in-duckdb.html). It is in a pivot format that uses row names to represent the home club and column names to represent the away club with the intersection cell giving the score as home club goals scored followed by a dash of some sort followed by the away club goals scored.
 
 
-First question: What is the dash-like character separating the score in the data cells?
+Question: What is the dash-like character separating the score in the data cells?
 
 VS Code says: "The character U+2013 "–" could be confused with the ASCII character U+002d "-", which is more common in source code"
 
-[What is "endash"](https://stackoverflow.com/questions/59839683/en-dash-giving-different-ascii-values()
+[What is _endash_](https://stackoverflow.com/questions/59839683/en-dash-giving-different-ascii-values)
 
 Our final objective is to create a version of the data for this season which we can integrate with the data for all other seasons. We will do this step-wise and create intermediate tables at each step. Each intermediate table will be the input for the subsequent step. Once we have achieved our goal, we will remove the intermediate tables. Note, all of this activity takes place in the _staging_ schema.
 
 #### Un-pivoting
 
 We need to "unpivot" the data, that is turn the "wide and short" representation into "long and thin". Hadley Wickham of R fame describes the long thin format as ["tidy data"](https://vita.had.co.nz/papers/tidy-data.pdf)
-The DuckDB documentation on unpivoting is excellent: [UNPIVOT Statement](https://duckdb.org/docs/sql/statements/unpivot.html)
+The DuckDB documentation on unpivoting is excellent: [UNPIVOT Statement](https://duckdb.org/docs/sql/statements/unpivot.html). It is easy to follow and gives examples you can try out yourself.
 
 ```sql
 USE staging;
@@ -133,7 +133,7 @@ INTO
 
 #### Beaking the scores into home and away columns
 
-The scores are separated by that odd _endash_ character and we need to break them appart. The _STRING_SPLIT_ is one of the many very useful DuckDB string functions and it takes the string and the split character (CHR(8211) represents endash) to return an array. We extract the two elements from this array  using the array element access notation []. DuckDB arrays are 1-based so [1] returns the home club goals while [2] returns the away club goals.
+The scores are separated by that odd _endash_ character and we need to break them appart. The _STRING_SPLIT_ function is one of the many very useful DuckDB string functions and it takes the string and the split character (CHR(8211) represents endash) to return an array. We extract the two elements from this array  using the array element access notation []. DuckDB arrays are 1-based so [1] returns the home club goals while [2] returns the away club goals.
 
 ```sql
 CREATE OR REPLACE TABLE season_1992_1993_scores AS
@@ -169,7 +169,7 @@ FROM season_1992_1993_scores; -- -> 462
 
 #### CAST scores to integer type
 
-Our scores are stored as strings (column type VARCHAR) but we want to convert them (CAST) to inmtegers.
+Our scores are stored as strings (column type VARCHAR) but we want to convert them (CAST) to integers.
 
 ```sql
 CREATE OR REPLACE TABLE season_1992_1993_int_scores
@@ -211,7 +211,7 @@ This table's data is now ready to be inserted into _matches_. The join replaces 
 2. We do not have the match dates so we just repeat NULL for each row and name the column _mdate_.
 3. Similary for _mtime_, we repeat NULLS for this column also.
 
-Filling in these columns isn't strictly necessary but I did it to emphasize home we can explicitly highlight NULLs for columns and to make the table the same structure as _matches_.
+Filling in these columns isn't strictly necessary but I did it to emphasize how we can explicitly highlight NULLs for columns and to make the table the same structure as _matches_.
 
 #### Append the data to table _matches_
 
@@ -238,6 +238,8 @@ FROM
   staging.season_1992_ready;
 ```
 
+The sequence column (_mid_) assigns unique monotonically ascending numbers to all the new rows automatically.
+
 👏👏 We now have data for our first season in the table _matches_. You can run a `SELECT COUNT(*) FROM matches`` to verify insertion of 462 rows. Our table is analysis-ready but unfortunately we don't have the match dates so we will need to be aware of this fact when we run queries for all seasons. Missing data is common and needs to be taken into account in analyses.
 
 Clean up: We can `DROP` our intermediate tables now:
@@ -252,85 +254,86 @@ DROP TABLE season_1992_ready;
 
 ## Seasons 1993_1994 to 2023_2024
 
+All the other seasons' data is available in the _staging table _epl_matches_1992_2024_. I spent some time verifying the data in this table and identified a number of issues we need to address:
+
+__Issue 1__: There are some spurious rows in the table that contain no data except season. This arose because some of the downloaded source files had empty lines. You can see these empty lines by executing the following SQL:
+
+```sql
+SELECT COUNT(*) 
+FROM seasons_1993_2023_raw 
+WHERE home_club_name IS NULL;
+```
+
+There are 697 such lines and they need to be filtered out.
+
+__Issue 2__: The _match_date_ format is inconsistent, some dates have two-digit years and others have four-digit years. We can identify each group using regular expressions like so:
+
+```sql
+-- Two-digit dates.
+SELECT match_date 
+FROM seasons_1993_2023_raw 
+WHERE REGEXP_MATCHES(match_date, '\d{2}\/\d{2}\/\d{2}$');
+-- Four-digit dates.
+SELECT match_date 
+FROM seasons_1993_2023_raw 
+WHERE REGEXP_MATCHES(match_date, '\d{2}\/\d{2}\/\d{4}$');
+```
+
+When we do the date conversions, we have to account for these two different formats.
+
+__Issue 3__: Our raw data uses the club names given by the file source website, but we want to map these to the three-letter club codes we assigned in our _clubs_ table. We will use the _clubs_ table to substitute the club names for club codes.
+
+__Issue 4__: For missing _match_time_  values we have the "NA" (Not Available) flag, we need to convert these to NULLs and all valid date strings to _TIME_ type.
+
+The following SQL effects all these transformations and creates a data output that we can append to the season 1992_1993 rows already in our _matches_ table.
 
 ```sql
 CREATE OR REPLACE TABLE staging.epl_matches_1992_2024 AS
-WITH matches_temp AS(
-  SELECT
-    '1992_1993' season,
-    NULL match_date,
-    NULL match_time,
-    home_club_code,
-    away_club_code,
-    home_club_score,
-    away_club_score
-  FROM season_1992_1993_ready
-  UNION
-  SELECT
-    season,
-    CASE
-      WHEN REGEXP_MATCHES(match_date, '\d{2}\/\d{2}\/\d{2}$') THEN
-        STRPTIME(match_date, '%d/%m/%y') 
-      WHEN REGEXP_MATCHES(match_date, '\d{2}\/\d{2}\/\d{4}$') THEN
-        STRPTIME(match_date, '%d/%m/%Y')
-    END match_date,
-    CASE
-      WHEN match_time = 'NA' THEN NULL
-      ELSE CAST(match_time AS TIME)
-    END match_time,
-    (SELECT club_code 
-     FROM macros.get_club_code(home_club_name)) home_club_code,
-    (SELECT club_code 
-     FROM macros.get_club_code(away_club_name)) away_club_code,
-    home_club_goals,
-    away_club_goals
-  FROM seasons_1993_2023_raw
-  WHERE home_club_name IS NOT NULL
-)
 SELECT
-  *
-FROM  matches_temp;
+  season,
+  CASE
+    WHEN REGEXP_MATCHES(match_date, 
+            '\d{2}\/\d{2}\/\d{2}$') THEN
+      STRPTIME(match_date, '%d/%m/%y') 
+    WHEN REGEXP_MATCHES(match_date,
+            '\d{2}\/\d{2}\/\d{4}$') THEN
+      STRPTIME(match_date, '%d/%m/%Y')
+  END mdate,
+  CASE
+    WHEN match_time = 'NA' THEN NULL
+    ELSE CAST(match_time AS TIME)
+  END mtime,
+  (SELECT club_code 
+      FROM main.clubs 
+    WHERE club_given_name = raw.home_club_name 
+    LIMIT 1) hcc,
+  (SELECT club_code 
+      FROM main.clubs 
+    WHERE club_given_name = raw.away_club_name 
+    LIMIT 1) acc,
+  home_club_goals hcg,
+  away_club_goals acg
+FROM seasons_1993_2023_raw raw
+WHERE home_club_name IS NOT NULL;
 ```
 
+The above SQL creates a new table whose data is ready to be appended to our _matches_ table.
+As this is quite a large piece of SQL code, it merits some explanation.
+
+- The first CASE statement uses a regex to determine the date format and then uses the _STRPTIME_ function to perform the type conversion (VARCHAR to DATE) using the appropriate format.
+
+- The second case statement converts the _match_time_ string value to a _TIME_ type or to NULL if the string value is "NA".
+
+- The two nested scalar SELECT statements in the main SELECT clause perform lookups and substitute the club name with the three letter club code.
+
+- The WHERE clause filters out all spurious rows that arose from blank lines in the downloaded source files.
+
+Our table can now be appended to the _matches_ table.
+
+### Append to _matches_ table
 
 ```sql
-COPY epl_matches_1992_2024 TO '../output_data/epl_matches_1992_2024.csv' (FORMAT 'csv', DELIMITER ',', HEADER true);
-```
-
-### Fix the date fields
-
-```sql
-SELECT match_date FROM seasons_1993_2023_raw WHERE REGEXP_MATCHES(match_date, '\d{2}\/\d{2}\/\d{2}$');
-```
-
-
-### date issue
-
-```sql
-select strptime('14/05/00', '%d/%m/%Y');
-select strptime('14/05/01', '%d/%m/%Y');
-select strptime('14/05/00', '%d/%m/%y');
-```
-
-## Create the final table
-
-```sql
-CREATE SEQUENCE seq_match_id START 1;
-CREATE OR REPLACE TABLE main.matches(
-  mid INTEGER PRIMARY KEY DEFAULT NEXTVAL('seq_match_id'),
-  season TEXT NOT NULL,
-  mdate DATE,
-  mtime TIME,
-  hcc TEXT NOT NULL,
-  acc TEXT NOT NULL,
-  hcg TINYINT NOT NULL,
-  acg TINYINT NOT NULL
-);
-```
-
-### Move the data from the temp table
-
-```sql
+USE main;
 INSERT INTO matches(season,
                     mdate,
                     mtime,
@@ -340,141 +343,24 @@ INSERT INTO matches(season,
                     acg)
 SELECT
   season,
-  match_date,
-  match_time,
-  home_club_code,
-  away_club_code,
-  home_club_score,
-  away_club_score
-FROM staging.epl_matches_1992_2024
-ORDER BY season, match_date, match_time, home_club_code;
+  mdate,
+  mtime,
+  hcc,
+  acc,
+  hcg,
+  acg
+FROM
+  staging.epl_matches_1992_2024;
 ```
 
-- Create the table in schema main 
-- Add a match id column using a sequence
-- Insert the data from the staging table in a defined order
-- Export the final table t0 an output file
+👏👏  We now have all our data in _matches_, 12,406 rows, and can now start working on the data in earnest. The data is clean and the columns are all the correct data type.
 
-```sql
-COPY matches TO '../output_data/matches.csv' (FORMAT 'csv', DELIMITER ',', HEADER true);
-```
+## Summing up
 
+- DuckDB is exceptionally good at cleaning up data.
+- Regular expressions, arrays and loads of functions make slicing and dicing easy.
+- We have only scratched the surface of its capabilities.
 
-## Create the league tables
+## Next up
 
-### Create an empty table
-
-```sql
-CREATE OR REPLACE TABLE ltables(
-  season VARCHAR,
-  ccode VARCHAR,
-  played TINYINT,
-  won TINYINT,
-  drawn TINYINT,
-  lost TINYINT,
-  scored INT,
-  conceded INT,
-  goal_diff INT,
-  points TINYINT
-);
-```
-
-
-```sql
-WITH mresults AS(
-  SELECT
-    mid,
-    season,
-    hcc ccode,
-    hcg scored,
-    acg conceded,
-    CASE
-      WHEN hcg = acg THEN 1
-      WHEN hcg > acg THEN 3
-      ELSE 0
-    END points,
-    CASE
-      WHEN hcg > acg THEN 1
-      ELSE 0
-    END won,
-    CASE
-      WHEN hcg = acg THEN 1
-      ELSE 0
-    END drawn,
-    CASE
-      WHEN hcg < acg THEN 1
-      ELSE 0
-    END lost
-  FROM matches
-  UNION
-  SELECT
-    mid,
-    season,
-    acc,
-    acg scored,
-    hcg conceded,
-    CASE
-      WHEN acg = hcg THEN 1
-      WHEN acg > hcg THEN 3
-      ELSE 0
-    END points,
-    CASE
-      WHEN acg > hcg THEN 1
-      ELSE 0
-    END won,
-    CASE
-      WHEN acg = hcg THEN 1
-      ELSE 0
-    END drawn,
-    CASE
-      WHEN acg < hcg THEN 1
-      ELSE 0
-    END lost
-  FROM matches
-),
-season_summary AS(
-  SELECT
-    season,
-    ccode,
-    COUNT(mid) played,
-    SUM(won) won,
-    SUM(drawn) drawn,
-    SUM(lost) lost,
-    SUM(scored) scored,
-    SUM(conceded) conceded,
-    SUM(scored - conceded) goal_diff,
-    SUM(points) points
-  FROM mresults
-  GROUP BY season, ccode
-)
-INSERT INTO ltables(
-  season,
-  ccode,
-  played,
-  won,
-  drawn,
-  lost,
-  scored,
-  conceded,
-  goal_diff,
-  points
-)
-SELECT
-  season,
-  ccode,
-  played,
-  won,
-  drawn,
-  lost,
-  scored,
-  conceded,
-  goal_diff,
-  points
-FROM season_summary;
-```
-
-### Export ltables
-
-```sql
-COPY ltables TO '../output_data/ltables.csv' (FORMAT 'csv', DELIMITER ',', HEADER true);
-```
+We will use SQL to create a final table derived from the _matches_ table which will summarise the end-of-season rankings of each club hus giving us the winners and losers of each league from 1992-1993 to 2013-2024. This table's creation will introduce more DuckDB SQL. We can then dive deep into our data and use DuckDB to answer all kinds of interesting questions.
