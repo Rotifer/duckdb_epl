@@ -103,10 +103,155 @@ Our _matches_ is now ready to receive data but before we insert it, we need to c
 
 ### Season 1992-1993
 
-The data for this season is in a crosstab format as dicussed in the [previous post](https://rotifer.github.io/2025/01/04/loading-and-viewing-data-in-duckdb.html).
+The data giving match scores for season 1992-1993 was downloaded from Wikipedia as discussed in the [previous post](https://rotifer.github.io/2025/01/04/loading-and-viewing-data-in-duckdb.html). It is in a pivot format that uses row names to represent the home club and column names to represent the away club with the intersection cell giving the score as home club goals scored followed by a dash of some sort followed by the away club goals scored.
 
 
-- We need the rows for _matches_ from both the 1992-1993 season and all the other seasons in one table or view that we can append to the _matches_ table created above.
+First question: What is the dash-like character separating the score in the data cells?
+
+VS Code says: "The character U+2013 "–" could be confused with the ASCII character U+002d "-", which is more common in source code"
+
+[What is "endash"](https://stackoverflow.com/questions/59839683/en-dash-giving-different-ascii-values()
+
+Our final objective is to create a version of the data for this season which we can integrate with the data for all other seasons. We will do this step-wise and create intermediate tables at each step. Each intermediate table will be the input for the subsequent step. Once we have achieved our goal, we will remove the intermediate tables. Note, all of this activity takes place in the _staging_ schema.
+
+#### Un-pivoting
+
+We need to "unpivot" the data, that is turn the "wide and short" representation into "long and thin". Hadley Wickham of R fame describes the long thin format as ["tidy data"](https://vita.had.co.nz/papers/tidy-data.pdf)
+The DuckDB documentation on unpivoting is excellent: [UNPIVOT Statement](https://duckdb.org/docs/sql/statements/unpivot.html)
+
+```sql
+USE staging;
+CREATE OR REPLACE TABLE season_1992_1993_unpivot AS
+UNPIVOT season_1992_1993_raw
+ON COLUMNS(* EXCLUDE "Home \ Away")
+INTO
+  NAME away_club_code
+  VALUE score;
+```
+
+
+
+#### Beaking the scores into home and away columns
+
+The scores are separated by that odd _endash_ character and we need to break them appart. The _STRING_SPLIT_ is one of the many very useful DuckDB string functions and it takes the string and the split character (CHR(8211) represents endash) to return an array. We extract the two elements from this array  using the array element access notation []. DuckDB arrays are 1-based so [1] returns the home club goals while [2] returns the away club goals.
+
+```sql
+CREATE OR REPLACE TABLE season_1992_1993_scores AS
+SELECT
+  "Home \ Away" AS home_club_name,
+  away_club_code,
+  STRING_SPLIT(score, CHR(8211))[1] home_club_score,
+  STRING_SPLIT(score, CHR(8211))[2] away_club_score
+FROM season_1992_1993_unpivot;
+```
+
+#### Remove self v self rows
+
+The DELETE relies on the fact that rows where the home and away club is the same the second element returned by the _STRING_SPLIT_ function will be _NULL_.
+
+Check the count before the delete:
+
+```sql
+SELECT COUNT(*)
+FROM season_1992_1993_scores; -- -> 484
+```
+
+```sql
+DELETE FROM season_1992_1993_scores
+WHERE away_club_score IS NULL;
+```
+
+```sql
+SELECT COUNT(*)
+FROM season_1992_1993_scores; -- -> 462
+```
+
+
+#### CAST scores to integer type
+
+Our scores are stored as strings (column type VARCHAR) but we want to convert them (CAST) to inmtegers.
+
+```sql
+CREATE OR REPLACE TABLE season_1992_1993_int_scores
+AS
+SELECT
+  home_club_name,
+  away_club_code,
+  CAST(home_club_score AS TINYINT) home_club_score,
+  CAST(away_club_score AS TINYINT) away_club_score
+FROM season_1992_1993_scores;
+```
+
+Note, I have used TINYINT as the column type for scores because these is no need to use a larger integer type.
+
+
+#### Join tables to convert club name to club code
+
+Our data is almost ready to be loaded into our table _matches_ in schema _main_ but we need to do one more thing: convert the home club name to the home club code (_hcc_ in table _matches_). We can achieve this by joining to our _clubs_ table
+
+```sql
+CREATE OR REPLACE TABLE season_1992_ready AS
+SELECT
+  '1992_1993' season,
+  NULL mdate,
+  NULL mtime,
+  c.club_code hcc,
+  sis.away_club_code acc,
+  sis.home_club_score hcg,
+  sis.away_club_score acg
+FROM
+  season_1992_1993_int_scores sis
+  JOIN main.clubs c
+    ON sis.home_club_name = c.club_name;
+```
+
+This table's data is now ready to be inserted into _matches_. The join replaces the club name with the club code and we have added three columns:
+
+1. _season_: We know the rows relate to season _'1992_1993'_ so we repeat this string for every row.
+2. We do not have the match dates so we just repeat NULL for each row and name the column _mdate_.
+3. Similary for _mtime_, we repeat NULLS for this column also.
+
+Filling in these columns isn't strictly necessary but I did it to emphasize home we can explicitly highlight NULLs for columns and to make the table the same structure as _matches_.
+
+#### Append the data to table _matches_
+
+A simple append query works here. Note, this query is executed from schema _main_ so we have to qualify the source table name with its schema in the FROM clause.
+
+```sql
+USE main;
+INSERT INTO matches(season,
+                    mdate,
+                    mtime,
+                    hcc,
+                    acc,
+                    hcg,
+                    acg)
+SELECT
+  season,
+  mdate,
+  mtime,
+  hcc,
+  acc,
+  hcg,
+  acg
+FROM
+  staging.season_1992_ready;
+```
+
+👏👏 We now have data for our first season in the table _matches_. You can run a `SELECT COUNT(*) FROM matches`` to verify insertion of 462 rows. Our table is analysis-ready but unfortunately we don't have the match dates so we will need to be aware of this fact when we run queries for all seasons. Missing data is common and needs to be taken into account in analyses.
+
+Clean up: We can `DROP` our intermediate tables now:
+
+```sql
+USE staging;
+DROP TABLE season_1992_1993_unpivot;
+DROP TABLE season_1992_1993_scores;
+DROP TABLE season_1992_1993_int_scores;
+DROP TABLE season_1992_ready;
+```
+
+## Seasons 1993_1994 to 2023_2024
+
 
 ```sql
 CREATE OR REPLACE TABLE staging.epl_matches_1992_2024 AS
