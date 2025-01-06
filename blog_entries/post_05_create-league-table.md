@@ -1,11 +1,13 @@
 ## The final club positions for each season 🦆⚽
 
-Our _matches_ table records all the data we need to contruct the final league positions for each season. However, we need to perform a series of aggregations and calculations to produce these league position tables. Since, the league positions are derived from the _matches_ that can be calculated on the fly, I am going to store them in a __view__ rather than in a base table. A view is a stored query so each time we use the view, it is re-calculated. This has a minimal cost in our example because the dataset is very small and DuckDB is highly performant. Here is the view definition, all 70 lines of it! 😨 It might look scary but it is actually not difficult once we break it down into its constituent parts. When building big SQL statements like this one, it is advisable to run the consituent parts independently and build the statement iteratively by adding the constituent parts one-by-one. I will do just that with explanatory notes for each part of the statement.
+Our _matches_ table records all the data we need to contruct the final league positions for each season. However, we need to perform a series of aggregations and calculations to produce these league position tables. Since, the league positions are calculated from the _matches_ table only, I am going to store them in a __view__ based on that table. A view is a stored query so each time we use the view, it is re-calculated. This has a minimal cost in our example because the dataset is very small and DuckDB is highly performant. It also has the advantage that if we add matches for another season, say 2024-2025, the data will automatically be added to the view. 
+
+Here is the view definition, all 70 lines of it! 😨 It might look scary but it is actually not difficult once we break it down into its constituent parts. When building big SQL statements like this one, I build it up iteratively and check the outputs as I go along. Hopefully, the notes below will clarify my approach.
 
 
 ## View definition
 
-Here is the ful SQL definition of the view:
+Here is the full SQL definition of the view:
 
 ```tsql
 USE main;
@@ -76,10 +78,14 @@ season_summary AS(
   FROM mresults
   GROUP BY season, ccode
 )
-SELECT *
+SELECT *, 
+  ROW_NUMBER()
+    OVER(PARTITION BY season 
+         ORDER BY  points DESC, goal_diff, scored) league_position
 FROM
   season_summary
-ORDER BY season, points DESC, goal_diff, scored;
+ORDER BY 
+  CAST(STRING_SPLIT(season, '_')[1] AS INTEGER) DESC;
 ```
 As with tables, we can add descriptive comments to views also.
 
@@ -87,7 +93,7 @@ As with tables, we can add descriptive comments to views also.
 COMMENT ON VIEW vw_ltables IS 'The final league table positions for each season in order of league winner to bottom club.';
 ```
 
-## Code explanation
+## Code notes
 
 ### Overview
 
@@ -143,7 +149,11 @@ The second CTE, named _season_summary_, performs the aggregations on the rows cr
 
 ### Final SELECT
 
-The final SELECT statemend, pulls the data from the second CTE and performs the ordering to generate the final league tables ordered by season and the descending number of points achieved by each club in that season. The two additional ordering columns break ties when the points tally for clubs in a season is the same.
+The final SELECT statement pulls the data from the second CTE and performs the ordering to generate the final league tables ordered by season and the descending number of points achieved by each club in that season. 
+
+- The [__window function__](https://duckdb.org/docs/sql/functions/window_functions.html) _ROW_NUMBER()_ assigns league finish positions to each by season ordered by total points, goal difference and goals scored. The two additional ordering columns break ties when the points tally for clubs in a season is the same.
+
+- The final ORDER BY clause isn't really necessary but it ensures the view displays the most recent seasons first. Note how the season start year is extracted and cast to an integer to ensure numeric rather than text sorting order.
 
 ## Wrapping up
 
