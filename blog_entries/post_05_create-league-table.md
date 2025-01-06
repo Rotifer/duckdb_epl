@@ -81,7 +81,7 @@ season_summary AS(
 SELECT *, 
   ROW_NUMBER()
     OVER(PARTITION BY season 
-         ORDER BY  points DESC, goal_diff, scored) league_position
+         ORDER BY  points DESC, goal_diff DESC, scored) league_position
 FROM
   season_summary
 ORDER BY 
