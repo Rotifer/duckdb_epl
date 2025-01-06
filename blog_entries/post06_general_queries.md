@@ -208,6 +208,36 @@ SELECT
 FROM vw_ltables
 WHERE league_position = 1
   AND points = (SELECT MAX(points) FROM vw_ltables)
-ORDER BY league_position  ;
+ORDER BY league_position;
 ```
 Only one club has ever attained 100 points in a single EPL season; it was the famous Manchester City "centurians". A phenomenol feat getting 100 out of a possible 114 points in a single season.
+
+4.
+
+```sql
+SELECT
+  season,
+  ccode,
+  points
+FROM vw_ltables
+WHERE league_position = 1
+  AND points = (SELECT MIN(points) 
+                FROM vw_ltables 
+                WHERE league_position = 1)
+ORDER BY league_position;
+```
+
+75 points in one season !
+
+5. 
+
+```sql
+SELECT
+  season,
+  ccode,
+  points
+FROM vw_ltables
+WHERE points = (SELECT MIN(points) FROM vw_ltables);
+```
+
+Poor Derby County with a paltry 11 points in season 2007-2008.
