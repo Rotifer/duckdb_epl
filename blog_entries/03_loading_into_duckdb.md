@@ -70,7 +70,7 @@ __Tip__: Use schemas to group like with like but ensure you are using the correc
 We are now going to create a table in the staging schema for the entire contents of the file _seasons_1993_2023.tsv_ by executing the following command:
 
 ```sql
-CREATE TABLE seasons_1993_2023_raw AS 
+CREATE OR REPLACE TABLE seasons_1993_2023_raw AS 
 SELECT * 
 FROM  '../output_data/seasons_1993_2023.tsv';
 ```
@@ -120,7 +120,7 @@ We can now import the table and get to work extracting its data into a more usab
 
 ```sql
 USE SCHEMA staging;
-CREATE TABLE season_1992_1993_raw AS
+CREATE OR REPLACE TABLE season_1992_1993_raw AS
 SELECT * 
 FROM '../source_data/season_1992_1993.tsv';
 ```

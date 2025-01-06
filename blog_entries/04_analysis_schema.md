@@ -64,7 +64,7 @@ This is our main table and it records details for all EPL matches played from se
 
 ```sql
 USE main;
-CREATE SEQUENCE seq_match_id START 1;
+CREATE OR REPLACE SEQUENCE seq_match_id START 1;
 CREATE OR REPLACE TABLE matches(
   mid INTEGER PRIMARY KEY DEFAULT NEXTVAL('seq_match_id'),
   season TEXT NOT NULL,
