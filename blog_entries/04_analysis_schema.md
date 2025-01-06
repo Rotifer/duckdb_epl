@@ -17,7 +17,7 @@ The clean up we will need to do on our two raw to tables to get to analysis-read
 
 We create the table in schema _main_ using the following SQL
 
-```sql
+```tsql
 USE main; -- Ensure this table is created in schema main
 CREATE OR REPLACE TABLE clubs(
   club_code VARCHAR PRIMARY KEY,
