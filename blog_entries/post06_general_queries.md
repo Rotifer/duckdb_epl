@@ -196,7 +196,7 @@ FROM winners
     AND winners.season = runners_up.season;
 ```
 
-It was season 2011_2012 when the league was decided on the last day when Sergio Agüero scored a dramatic goal for Manchester City in injury time to seal the victory they needed to snatch the title from their Manchester United  neighbours and rivals on goal difference both clubs having finished on 86 points, an unforgettable climax to the season!
+It was season 2011_2012 when the league was decided on the last day when Sergio Agüero scored a dramatic goal for Manchester City in injury time to seal the victory they needed to snatch the title from their Manchester United  neighbours and rivals on goal difference both clubs having finished on 89 points, an unforgettable climax to the season!
 
 3. 
 
