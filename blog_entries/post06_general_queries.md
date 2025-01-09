@@ -233,8 +233,8 @@ Our output:
 
 |     club_name     | league_titles |
 |-------------------|--------------:|
-| Manchester United | 14            |
-| Manchester City   | 7             |
+| Manchester United | 13            |
+| Manchester City   | 8             |
 | Chelsea           | 5             |
 | Arsenal           | 3             |
 | Blackburn Rovers  | 1             |
@@ -242,7 +242,8 @@ Our output:
 | Leicester City    | 1             |
 
 
-We have used a __subquery__ in the main SELECT to do the lookup of club name using club code. When used like this, the subquery can only return a single value, that it, it must be _scalar_. Our ORDER BY  DESC clause highlights Manchester United as the most successful club of the EPL era winning 14 titles, twice as many as their city neighbours, Manchester City.
+
+We have used a __subquery__ in the main SELECT to do the lookup of club name using club code. When used like this, the subquery can only return a single value, that it, it must be _scalar_. Our ORDER BY  DESC clause highlights Manchester United as the most successful club of the EPL era winning 13 titles, five more than their city neighbours, Manchester City.
 
 ## Wrapping up
 
