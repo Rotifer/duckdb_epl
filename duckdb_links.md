@@ -12,3 +12,8 @@
 
 - [Collection of insane and fun facts about SQLite - 30 Dec 2024](https://avi.im/blag/2024/sqlite-facts/)
 
+
+- [Modern Data Stack in a Box with DuckDB](https://duckdb.org/2022/10/12/modern-data-stack-in-a-box.html)
+
+- [https://dagster.io/blog/duckdb-data-lake](https://dagster.io/blog/duckdb-data-lake)
+
