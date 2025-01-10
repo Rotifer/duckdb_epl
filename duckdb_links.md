@@ -9,3 +9,5 @@
 - [Harlequin The SQL IDE for Your Terminal.](https://harlequin.sh/)
 
 - [Command Line Data Processing: Using DuckDB as a Unix Tool](https://duckdb.org/2024/06/20/cli-data-processing-using-duckdb-as-a-unix-tool.html)
+
+- [Getting-Started-with-DuckDB Packt Book](https://github.com/PacktPublishing/Getting-Started-with-DuckDB)
