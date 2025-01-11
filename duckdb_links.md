@@ -11,3 +11,6 @@
 - [Command Line Data Processing: Using DuckDB as a Unix Tool](https://duckdb.org/2024/06/20/cli-data-processing-using-duckdb-as-a-unix-tool.html)
 
 - [Getting-Started-with-DuckDB Packt Book](https://github.com/PacktPublishing/Getting-Started-with-DuckDB)
+
+- [Preventing common analytical errors: Join duplicates and join misses](https://alexpetralia.com/2017/07/19/more-dangerous-subtleties-of-joins-in-sql/)
+
