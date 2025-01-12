@@ -1,0 +1,7 @@
+# Running totals with window functions 🦆⚽
+
+As a season progresses, clubs accumulate points and comparisons between clubs at different points in the season are interesting. Some clubs "hit form" and surge ahead while others lose players through injury or experience "a dip in form". Running totals are needed to see how clubs positions change throughout the season. There is a general application for this approach to things like sales over time and it can be implemented in SQL using window functions which are fully supported by DuckDB. I am only going to explain one example in this post but I will return to the topic again and perhaps then write a up a more comprehensive review of the topic. Bottom line is: if you don't know and use window functions, you're missing out on one of the most powerful features of modern SQL. In the meantime, as always check out the [DuckDB documentation](https://duckdb.org/docs/sql/functions/window_functions.html) and I also strongly recommend this [excellent tutorial](https://www.cpard.xyz/posts/sql_window_functions_tutorial/).
+
+## running totals
+
+Our objective is to create a view that orders all the data from _matches_ table by season, club and match date and adds a column that displays the club's accrued points at that point in the season.
