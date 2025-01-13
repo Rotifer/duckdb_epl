@@ -14,3 +14,4 @@
 
 - [Preventing common analytical errors: Join duplicates and join misses](https://alexpetralia.com/2017/07/19/more-dangerous-subtleties-of-joins-in-sql/)
 
+- [otUnique Index on NULL Values in SQL & NoSQL - Franck Pach](https://dev.to/aws-heroes/unique-index-on-null-values-in-sql-nosql-34ej)
