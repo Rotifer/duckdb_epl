@@ -23,3 +23,9 @@
 - [Exploring Database Isolation Levels](https://www.thecoder.cafe/p/exploring-database-isolation-levels?sort=new)
 
 - [Bash Scripting on Linux](https://www.youtube.com/playlist?app=desktop&list=PLT98CRl2KxKGj-VKtApD8-zCqSaN2mD4w)
+
+- [DuckPGQ - DuckPGQ is a DuckDB extension for graph workloads that supports the SQL/PGQ standard. ](https://duckpgq.org/)
+
+- [PostgreSQL Example Scripts for “Testing and Scalability”](https://use-the-index-luke.com/sql/example-schema/postgresql/performance-testing-scalability)
+
+- [Features I wish PostgreSQL had as a developer](https://www.bytebase.com/blog/features-i-wish-postgres-had/)
