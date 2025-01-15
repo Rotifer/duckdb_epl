@@ -17,3 +17,9 @@
 - [Unique Index on NULL Values in SQL & NoSQL - Franck Patchot](https://dev.to/aws-heroes/unique-index-on-null-values-in-sql-nosql-34ej)
 
 - [Anatomy of Table-Level Locks in PostgreSQL - Gulcin Yildirim Jelinek](https://pgroll.com/blog/anatomy-of-table-level-locks-in-postgresql)
+
+- [DuckDB Snippets](https://duckdbsnippets.com/)
+
+- [Exploring Database Isolation Levels](https://www.thecoder.cafe/p/exploring-database-isolation-levels?sort=new)
+
+- [Bash Scripting on Linux](https://www.youtube.com/playlist?app=desktop&list=PLT98CRl2KxKGj-VKtApD8-zCqSaN2mD4w)
