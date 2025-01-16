@@ -29,3 +29,5 @@
 - [PostgreSQL Example Scripts for “Testing and Scalability”](https://use-the-index-luke.com/sql/example-schema/postgresql/performance-testing-scalability)
 
 - [Features I wish PostgreSQL had as a developer](https://www.bytebase.com/blog/features-i-wish-postgres-had/)
+
+- [Using DuckDB to explore the IfG Ministers Database - Tutorial](https://github.com/instituteforgov/ifg-ministers-database-public/blob/main/tutorial/duckdb_tutorial.MD)
